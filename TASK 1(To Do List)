@@ -1,1 +1,143 @@
+import json
+import os
+from datetime import datetime
 
+TASK_FILE = "tasks.json"
+
+
+def load_tasks():
+    if os.path.exists(TASK_FILE):
+        with open(TASK_FILE, "r") as f:
+            return json.load(f)
+    return []
+
+
+def save_tasks(tasks):
+    with open(TASK_FILE, "w") as f:
+        json.dump(tasks, f, indent=4)
+
+
+def add_task():
+    title = input("Enter task title: ").strip()
+    if not title:
+        print("Task title cannot be empty.")
+        return
+    priority = input("Enter priority (High/Medium/Low): ").capitalize()
+    deadline = input("Enter deadline (YYYY-MM-DD) or leave empty: ").strip()
+    
+    task = {
+        "title": title,
+        "priority": priority if priority in ["High", "Medium", "Low"] else "Medium",
+        "deadline": deadline if deadline else "None",
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "completed": False
+    }
+
+    tasks = load_tasks()
+    tasks.append(task)
+    save_tasks(tasks)
+    print("✅ Task added successfully!")
+
+
+def list_tasks(show_all=True):
+    tasks = load_tasks()
+    if not tasks:
+        print("No tasks found.")
+        return
+
+    for i, task in enumerate(tasks):
+        if not show_all and task['completed']:
+            continue
+        status = "✔️" if task['completed'] else "❌"
+        print(f"{i + 1}. [{status}] {task['title']} (Priority: {task['priority']}, Deadline: {task['deadline']})")
+
+
+def mark_done():
+    tasks = load_tasks()
+    list_tasks(show_all=False)
+    try:
+        task_no = int(input("Enter the task number to mark as done: "))
+        if 1 <= task_no <= len(tasks):
+            tasks[task_no - 1]["completed"] = True
+            save_tasks(tasks)
+            print("✅ Task marked as done.")
+        else:
+            print("Invalid task number.")
+    except ValueError:
+        print("Please enter a valid number.")
+
+
+def delete_task():
+    tasks = load_tasks()
+    list_tasks()
+    try:
+        task_no = int(input("Enter the task number to delete: "))
+        if 1 <= task_no <= len(tasks):
+            removed = tasks.pop(task_no - 1)
+            save_tasks(tasks)
+            print(f"🗑️ Task '{removed['title']}' deleted.")
+        else:
+            print("Invalid task number.")
+    except ValueError:
+        print("Please enter a valid number.")
+
+
+def edit_task():
+    tasks = load_tasks()
+    list_tasks()
+    try:
+        task_no = int(input("Enter task number to edit: "))
+        if 1 <= task_no <= len(tasks):
+            task = tasks[task_no - 1]
+            new_title = input(f"New title (press enter to keep '{task['title']}'): ").strip()
+            new_priority = input(f"New priority (High/Medium/Low, current: {task['priority']}): ").capitalize()
+            new_deadline = input(f"New deadline (YYYY-MM-DD, current: {task['deadline']}): ").strip()
+
+            if new_title:
+                task['title'] = new_title
+            if new_priority in ["High", "Medium", "Low"]:
+                task['priority'] = new_priority
+            if new_deadline:
+                task['deadline'] = new_deadline
+
+            save_tasks(tasks)
+            print("✏️ Task updated.")
+        else:
+            print("Invalid task number.")
+    except ValueError:
+        print("Please enter a valid number.")
+
+
+def main():
+    while True:
+        print("\n===== TO-DO LIST MENU =====")
+        print("1. Add Task")
+        print("2. View All Tasks")
+        print("3. View Pending Tasks")
+        print("4. Mark Task as Done")
+        print("5. Edit Task")
+        print("6. Delete Task")
+        print("7. Exit")
+        choice = input("Choose an option (1-7): ").strip()
+
+        if choice == '1':
+            add_task()
+        elif choice == '2':
+            list_tasks()
+        elif choice == '3':
+            list_tasks(show_all=False)
+        elif choice == '4':
+            mark_done()
+        elif choice == '5':
+            edit_task()
+        elif choice == '6':
+            delete_task()
+        elif choice == '7':
+            print("👋 Exiting... Have a productive day!")
+            break
+        else:
+            print("❗ Invalid option. Please try again.")
+
+
+if __name__ == "__main__":
+    main()
